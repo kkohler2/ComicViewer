@@ -1,4 +1,5 @@
 ﻿// TODO: Paging for PoliticalCartoons.com
+//       Fix compression issue with ComicsKingdom
 
 using Newtonsoft.Json;
 using Microsoft.Extensions.Configuration;
@@ -16,6 +17,7 @@ namespace ComicViewer
     {
         private readonly HttpClient _HttpClient = new HttpClient();
         private List<ComicData> comicList = new List<ComicData>();
+        private List<ComicData> comicKingdomList = new List<ComicData>();
         private string lastViewedFile;
         private Dictionary<string, string> lastViewed = new Dictionary<string, string>();
         private Dictionary<string, string> lastViewedUpdated = new Dictionary<string, string>();
@@ -62,6 +64,31 @@ namespace ComicViewer
                 string data = string.Empty;
                 switch (comic.Type)
                 {
+                    case "comicskingdom":
+                        {
+                            data = await GetResponse(comic.Name, false);
+                            if (lastViewed.ContainsKey("comicskingdom"))
+                            {
+                                newestDate = lastViewed["comicskingdom"];
+                                lastDate = DateTime.Parse(newestDate);
+                            }
+                            else
+                            {
+                                lastDate = DateTime.Today.Date - new TimeSpan(14, 0, 0, 0);
+                                newestDate = lastDate.ToString("yyyy-MM-dd");
+                            }
+                            await ProcessComicsKingdom(comic.Name, data, lastDate);
+                            string lastViewedDate = string.Empty;
+                            if (lastViewedUpdated.ContainsKey("comicskingdom"))
+                            {
+                                lastViewedDate = lastViewedUpdated["comicskingdom"];
+                            }
+                            if (string.Compare(newestDate, lastViewedDate) > 0)
+                            {
+                                lastViewedUpdated["comicskingdom"] = newestDate;
+                            }
+                        }
+                        break;
                     case "gocomics":
                         {
                             data = await GetResponse(comic.Name);
@@ -75,7 +102,6 @@ namespace ComicViewer
                                 lastDate = DateTime.Today.Date - new TimeSpan(14, 0, 0, 0);
                                 newestDate = lastDate.ToString("yyyy/MM/dd");
                             }
-                            string previous = newestDate;
                             await ProcessGoComic(comic.Name, data, lastDate);
                             string lastViewedDate = string.Empty;
                             if (lastViewedUpdated.ContainsKey("gocomics"))
@@ -101,7 +127,6 @@ namespace ComicViewer
                                 lastDate = DateTime.Today.Date - new TimeSpan(14, 0, 0, 0);
                                 newestDate = lastDate.ToString("yyyy/MM/dd");
                             }
-                            string previous = newestDate;
                             await ProcessPoliticalCartoons(comic.Name, data, lastDate);
                             string lastViewedDate = string.Empty;
                             if (lastViewedUpdated.ContainsKey("politicalcartoons"))
@@ -122,8 +147,20 @@ namespace ComicViewer
             {
                 writer.WriteLine("<html>");
                 writer.WriteLine("<body>");
-                if (comicList.Count > 0 || politicalCartoons.Count > 0)
+                if (comicKingdomList.Count > 0 || comicList.Count > 0 || politicalCartoons.Count > 0)
                 {
+                    foreach (var comic in comicKingdomList)
+                    {
+                        if (!first && comic.First)
+                        {
+                            writer.WriteLine("  <hr/>");
+                        }
+                        writer.WriteLine($"  {comic.Title}<br/>");
+                        writer.WriteLine($"  <a href=\"{comic.Url}\">");
+                        writer.WriteLine($"  <img src=\"{comic.Image}\">");
+                        writer.WriteLine($"  </a><br/>");
+                        first = false;
+                    }
                     foreach (var comic in comicList)
                     {
                         if (!first && comic.First)
@@ -182,28 +219,130 @@ namespace ComicViewer
             process.Start();
         }
 
-        private async Task<string> GetResponse(string url)
+        private async Task<string> GetResponse(string url, bool useCompression = true)
         {
+            Debug.WriteLine("URL: " + url);
             using (var request = new HttpRequestMessage(HttpMethod.Get, new Uri(url)))
             {
                 request.Headers.TryAddWithoutValidation("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
-                request.Headers.TryAddWithoutValidation("Accept-Encoding", "gzip, deflate");
-                request.Headers.TryAddWithoutValidation("Accept-Language", "en-US,en;q=0.5");
-                request.Headers.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:80.0) Gecko/20100101 Firefox/80.0");
-
-                using (var response = await _HttpClient.SendAsync(request).ConfigureAwait(false))
+                if (useCompression)
                 {
-                    response.EnsureSuccessStatusCode();
-                    using (var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
-                    using (var decompressedStream = new GZipStream(responseStream, CompressionMode.Decompress))
-                    using (var streamReader = new StreamReader(decompressedStream))
+                    request.Headers.TryAddWithoutValidation("Accept-Encoding", "gzip, deflate");
+                }
+                request.Headers.TryAddWithoutValidation("Accept-Language", "en-US,en;q=0.5");
+                request.Headers.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0");
+
+                if (useCompression)
+                {
+                    using (var response = await _HttpClient.SendAsync(request).ConfigureAwait(false))
                     {
-                        return await streamReader.ReadToEndAsync().ConfigureAwait(false);
+                        response.EnsureSuccessStatusCode();
+                        using (var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                        using (var decompressedStream = new GZipStream(responseStream, CompressionMode.Decompress))
+                        using (var streamReader = new StreamReader(decompressedStream))
+                        {
+                            return await streamReader.ReadToEndAsync().ConfigureAwait(false);
+                        }
+                    }
+                }
+                else
+                {
+                    using (var response = await _HttpClient.SendAsync(request).ConfigureAwait(false))
+                    {
+                        response.EnsureSuccessStatusCode();
+                        using (var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                        using (var streamReader = new StreamReader(responseStream))
+                        {
+                            return await streamReader.ReadToEndAsync().ConfigureAwait(false);
+                        }
                     }
                 }
             }
         }
 
+        #region ComicsKingdom
+        private async Task ProcessComicsKingdom(string comicUrl, string data, DateTime dtLastDate)
+        {
+            string lastDate = dtLastDate.ToString("yyyy-MM-dd");
+            int index = comicUrl.LastIndexOf("/");
+            if (index != -1)
+            {
+                string comic = comicUrl.Substring(index);
+                comicUrl = comicUrl.Replace(comic, string.Empty);
+                comic += "/";
+                index = data.IndexOf(comic);
+                if (index != -1)
+                {
+                    int index2 = data.IndexOf('\'', index);
+                    if (index2 != -1)
+                    {
+                        string comicDate = data.Substring(index, index2 - index);
+                        comicDate = comicDate.Replace(comic, string.Empty);
+                        await ProcessProcessComicsKingdomDate(comicUrl, comic, comicDate, lastDate);
+                    }
+                }
+            }
+        }
+
+        private async Task ProcessProcessComicsKingdomDate(string comicUrl, string comic, string comicDate, string lastDate)
+        {
+            bool first = true;
+            while (string.Compare(comicDate, lastDate) > 0)
+            {
+                try
+                {
+                    string data = await GetResponse($"{comicUrl}{comic}{comicDate}", false);
+                    string title = GetElement(data, "<title>", "</title>", true).TrimEnd();
+                    string url = GetElement(data, "<meta property=\"og:url\" content=\"", "\" />", true);
+                    string image = GetElement(data, "<meta property=\"og:image\" content=\"", "\" />", true);
+                    if (!string.IsNullOrWhiteSpace(image))
+                    {
+                        ComicData comicData = new ComicData
+                        {
+                            First = first,
+                            Image = image,
+                            Title = title,
+                            Url = url
+                        };
+                        first = false;
+                        Console.WriteLine($"{comic}{comicDate}");
+                        comicKingdomList.Add(comicData);
+                        if (string.Compare(comicDate, newestDate) > 0)
+                        {
+                            newestDate = comicDate;
+                        }
+                        int pos = data.IndexOf("date-slug");
+                        comicDate = string.Empty;
+                        if (pos != -1)
+                        {
+                            pos = data.IndexOf("\"", pos);
+                            if (pos != -1)
+                            {
+                                string temp = data.Substring(pos + 1);
+                                pos = temp.IndexOf("\"");
+                                if (pos != -1)
+                                {
+                                    comicDate = temp.Substring(0, pos);
+                                }
+                            }
+                        }
+                        if (comicDate == string.Empty)
+                            break;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                }
+            }
+        }
+        #endregion
+
+        #region GoComic
         private async Task ProcessGoComic(string comicUrl,string data, DateTime dtLastDate)
         {
             string lastDate = dtLastDate.ToString("yyyy/MM/dd");
@@ -280,7 +419,9 @@ namespace ComicViewer
                 }
             }
         }
+        #endregion
 
+        #region PoliticalCartoons
         private async Task ProcessPoliticalCartoons(string comicUrl, string data, DateTime dtLastDate)
         {
             string author = string.Empty;
@@ -377,6 +518,7 @@ namespace ComicViewer
                 }
             }
         }
+        #endregion
 
         private string GetElement(string html, string openTag, string closeTag, bool removeFromStart)
         {

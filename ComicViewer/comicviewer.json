@@ -4,13 +4,17 @@
     "Browser": "C:\\Program Files\\Mozilla Firefox\\firefox.exe",
     "Website": [
       {
+        "Name": "https://www.comicskingdom.com/bizarro",
+        "Type": "comicskingdom"
+      },
+      {
         "Name": "https://www.gocomics.com/calvinandhobbes",
         "Type": "gocomics"
       },
       {
         "Name": "https://politicalcartoons.com/cartoonist/alla-and-chavdar/",
         "Type": "politicalcartoons"
-      },
+      }
     ]
   }
 }

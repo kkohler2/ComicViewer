@@ -1,14 +1,16 @@
 ﻿// TODO: Paging for PoliticalCartoons.com
 //       Fix compression issue with ComicsKingdom
 
-using Newtonsoft.Json;
 using Microsoft.Extensions.Configuration;
+//using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Net;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace ComicViewer
@@ -48,8 +50,8 @@ namespace ComicViewer
                 using(StreamReader reader = new StreamReader(lastViewedFile))
                 {
                     string data = reader.ReadToEnd();
-                    lastViewed = JsonConvert.DeserializeObject<Dictionary<string, string>>(data);
-                    lastViewedUpdated = JsonConvert.DeserializeObject<Dictionary<string, string>>(data);
+                    lastViewed = JsonSerializer.Deserialize<Dictionary<string, string>>(data);
+                    lastViewedUpdated = JsonSerializer.Deserialize<Dictionary<string, string>>(data);
                 }
             }
             IConfiguration config = new ConfigurationBuilder()
@@ -66,7 +68,7 @@ namespace ComicViewer
                 {
                     case "comicskingdom":
                         {
-                            data = await GetResponse(comic.Name, false);
+                            data = await GetResponse(comic.Name);
                             if (lastViewed.ContainsKey("comicskingdom"))
                             {
                                 newestDate = lastViewed["comicskingdom"];
@@ -202,7 +204,7 @@ namespace ComicViewer
 
             try
             {
-                string json = JsonConvert.SerializeObject(lastViewedUpdated);
+                string json = JsonSerializer.Serialize(lastViewedUpdated);
                 using (StreamWriter writer = new StreamWriter(lastViewedFile))
                 {
                     writer.WriteLine(json);
@@ -219,45 +221,44 @@ namespace ComicViewer
             process.Start();
         }
 
-        private async Task<string> GetResponse(string url, bool useCompression = true)
+        private async Task<string> GetResponse(string url)
         {
-            Debug.WriteLine("URL: " + url);
-            using (var request = new HttpRequestMessage(HttpMethod.Get, new Uri(url)))
+            var webRequest = (HttpWebRequest)WebRequest.Create(url);
+            webRequest.Method = WebRequestMethods.Http.Get;
+            webRequest.KeepAlive = true;
+            webRequest.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8";
+            webRequest.Headers.Add("Accept-Encoding", "gzip,deflate");
+            webRequest.Headers.Add("Accept-Language", "en-US,en;q=0.5");
+            webRequest.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0");
+            webRequest.Referer = url;
+            using (HttpWebResponse webResponse = (HttpWebResponse)webRequest.GetResponse())
             {
-                request.Headers.TryAddWithoutValidation("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
-                if (useCompression)
+                using (Stream stream = GetStreamForResponse(webResponse, 1000))
                 {
-                    request.Headers.TryAddWithoutValidation("Accept-Encoding", "gzip, deflate");
-                }
-                request.Headers.TryAddWithoutValidation("Accept-Language", "en-US,en;q=0.5");
-                request.Headers.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0");
-
-                if (useCompression)
-                {
-                    using (var response = await _HttpClient.SendAsync(request).ConfigureAwait(false))
+                    using (var streamReader = new StreamReader(stream))
                     {
-                        response.EnsureSuccessStatusCode();
-                        using (var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
-                        using (var decompressedStream = new GZipStream(responseStream, CompressionMode.Decompress))
-                        using (var streamReader = new StreamReader(decompressedStream))
-                        {
-                            return await streamReader.ReadToEndAsync().ConfigureAwait(false);
-                        }
-                    }
-                }
-                else
-                {
-                    using (var response = await _HttpClient.SendAsync(request).ConfigureAwait(false))
-                    {
-                        response.EnsureSuccessStatusCode();
-                        using (var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
-                        using (var streamReader = new StreamReader(responseStream))
-                        {
-                            return await streamReader.ReadToEndAsync().ConfigureAwait(false);
-                        }
+                        return await streamReader.ReadToEndAsync().ConfigureAwait(false);
                     }
                 }
             }
+        }
+
+        private static Stream GetStreamForResponse(HttpWebResponse webResponse, int readTimeOut)
+        {
+            Stream stream;
+            switch (webResponse.ContentEncoding?.ToUpperInvariant())
+            {
+                case "GZIP":
+                    stream = new GZipStream(webResponse.GetResponseStream(), CompressionMode.Decompress);
+                    break;
+                case "DEFLATE":
+                    stream = new DeflateStream(webResponse.GetResponseStream(), CompressionMode.Decompress);
+                    break;
+                default:
+                    stream = webResponse.GetResponseStream();
+                    break;
+            }
+            return stream;
         }
 
         #region ComicsKingdom
@@ -291,7 +292,7 @@ namespace ComicViewer
             {
                 try
                 {
-                    string data = await GetResponse($"{comicUrl}{comic}{comicDate}", false);
+                    string data = await GetResponse($"{comicUrl}{comic}{comicDate}");
                     string title = GetElement(data, "<title>", "</title>", true).TrimEnd();
                     string url = GetElement(data, "<meta property=\"og:url\" content=\"", "\" />", true);
                     string image = GetElement(data, "<meta property=\"og:image\" content=\"", "\" />", true);

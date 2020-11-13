@@ -69,6 +69,11 @@ namespace ComicViewer
                     case "comicskingdom":
                         {
                             data = await GetResponse(comic.Name);
+                            if (string.IsNullOrWhiteSpace(data))
+                            {
+                                Console.WriteLine($"Unable to download {comic.Name}");
+                                continue;
+                            }
                             if (lastViewed.ContainsKey("comicskingdom"))
                             {
                                 newestDate = lastViewed["comicskingdom"];
@@ -94,6 +99,11 @@ namespace ComicViewer
                     case "gocomics":
                         {
                             data = await GetResponse(comic.Name);
+                            if (string.IsNullOrWhiteSpace(data))
+                            {
+                                Console.WriteLine($"Unable to download {comic.Name}");
+                                continue;
+                            }
                             if (lastViewed.ContainsKey("gocomics"))
                             {
                                 newestDate = lastViewed["gocomics"];
@@ -119,6 +129,11 @@ namespace ComicViewer
                     case "politicalcartoons":
                         {
                             data = await GetResponse(comic.Name);
+                            if (string.IsNullOrWhiteSpace(data))
+                            {
+                                Console.WriteLine($"Unable to download {comic.Name}");
+                                continue;
+                            }
                             if (lastViewed.ContainsKey("politicalcartoons"))
                             {
                                 newestDate = lastViewed["politicalcartoons"];
@@ -223,24 +238,33 @@ namespace ComicViewer
 
         private async Task<string> GetResponse(string url)
         {
-            var webRequest = (HttpWebRequest)WebRequest.Create(url);
-            webRequest.Method = WebRequestMethods.Http.Get;
-            webRequest.KeepAlive = true;
-            webRequest.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8";
-            webRequest.Headers.Add("Accept-Encoding", "gzip,deflate");
-            webRequest.Headers.Add("Accept-Language", "en-US,en;q=0.5");
-            webRequest.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0");
-            webRequest.Referer = url;
-            using (HttpWebResponse webResponse = (HttpWebResponse)webRequest.GetResponse())
+            try
             {
-                using (Stream stream = GetStreamForResponse(webResponse, 1000))
+                var webRequest = (HttpWebRequest)WebRequest.Create(url);
+                webRequest.Method = WebRequestMethods.Http.Get;
+                webRequest.KeepAlive = true;
+                webRequest.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8";
+                webRequest.Headers.Add("Accept-Encoding", "gzip,deflate");
+                webRequest.Headers.Add("Accept-Language", "en-US,en;q=0.5");
+                webRequest.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0");
+                webRequest.Referer = url;
+                using (HttpWebResponse webResponse = (HttpWebResponse)webRequest.GetResponse())
                 {
-                    using (var streamReader = new StreamReader(stream))
+                    using (Stream stream = GetStreamForResponse(webResponse, 1000))
                     {
-                        return await streamReader.ReadToEndAsync().ConfigureAwait(false);
+                        using (var streamReader = new StreamReader(stream))
+                        {
+                            return await streamReader.ReadToEndAsync().ConfigureAwait(false);
+                        }
                     }
                 }
             }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"URL: {url}");
+                Debug.WriteLine($"Error: {ex.Message}");
+            }
+            return string.Empty;
         }
 
         private static Stream GetStreamForResponse(HttpWebResponse webResponse, int readTimeOut)

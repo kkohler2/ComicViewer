@@ -174,7 +174,7 @@ namespace ComicViewer
                         }
                         writer.WriteLine($"  {comic.Title}<br/>");
                         writer.WriteLine($"  <a href=\"{comic.Url}\">");
-                        writer.WriteLine($"  <img src=\"{comic.Image}\">");
+                        writer.WriteLine($"  <img src=\"{comic.Image}\" loading=\"lazy\">");
                         writer.WriteLine($"  </a><br/>");
                         first = false;
                     }
@@ -186,7 +186,7 @@ namespace ComicViewer
                         }
                         writer.WriteLine($"  {comic.Title}<br/>");
                         writer.WriteLine($"  <a href=\"{comic.Url}\">");
-                        writer.WriteLine($"  <img src=\"{comic.Image}\">");
+                        writer.WriteLine($"  <img src=\"{comic.Image}\" loading=\"lazy\">");
                         writer.WriteLine($"  </a><br/>");
                         first = false;
                     }
@@ -204,7 +204,7 @@ namespace ComicViewer
                         }
                         writer.WriteLine($"  {politicalCartoon.Title} {politicalCartoon.Date}<br/>");
                         writer.WriteLine($"  <a href=\"{politicalCartoon.Url}\">");
-                        writer.WriteLine($"  <img src=\"{politicalCartoon.Image}\">");
+                        writer.WriteLine($"  <img src=\"{politicalCartoon.Image}\" loading=\"lazy\">");
                         writer.WriteLine($"  </a><br/>");
                         first = false;
                     }
@@ -240,6 +240,7 @@ namespace ComicViewer
         {
             try
             {
+                Debug.WriteLine($"Downloading {url}...");
                 var webRequest = (HttpWebRequest)WebRequest.Create(url);
                 webRequest.Method = WebRequestMethods.Http.Get;
                 webRequest.KeepAlive = true;
@@ -318,7 +319,7 @@ namespace ComicViewer
                 {
                     string data = await GetResponse($"{comicUrl}{comic}{comicDate}");
                     string title = GetElement(data, "<title>", "</title>", true).TrimEnd();
-                    string url = GetElement(data, "<meta property=\"og:url\" content=\"", "\" />", true);
+                    string url = $"{comicUrl}{comic}{comicDate}";
                     string image = GetElement(data, "<meta property=\"og:image\" content=\"", "\" />", true);
                     if (!string.IsNullOrWhiteSpace(image))
                     {

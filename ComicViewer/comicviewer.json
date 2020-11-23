@@ -4,6 +4,10 @@
     "Browser": "C:\\Program Files\\Mozilla Firefox\\firefox.exe",
     "Website": [
       {
+        "Name": "https://xkcd.com/",
+        "Type": "xkcd"
+      },
+      {
         "Name": "https://www.comicskingdom.com/bizarro",
         "Type": "comicskingdom"
       },

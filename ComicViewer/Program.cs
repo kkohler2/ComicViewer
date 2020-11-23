@@ -2,7 +2,6 @@
 //       Fix compression issue with ComicsKingdom
 
 using Microsoft.Extensions.Configuration;
-//using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -18,6 +17,7 @@ namespace ComicViewer
     class Program
     {
         private readonly HttpClient _HttpClient = new HttpClient();
+        private List<ComicData> xkcdList = new List<ComicData>();
         private List<ComicData> comicList = new List<ComicData>();
         private List<ComicData> comicKingdomList = new List<ComicData>();
         private string lastViewedFile;
@@ -66,6 +66,29 @@ namespace ComicViewer
                 string data = string.Empty;
                 switch (comic.Type)
                 {
+                    case "xkcd":
+                        {
+                            string lastComic = string.Empty;
+                            if (lastViewed.ContainsKey("xkcd"))
+                            {
+                                lastComic = lastViewed["xkcd"];
+                            }
+                            if (!await ProcessXkcd(comic.Name, lastComic))
+                            {
+                                Console.WriteLine($"Unable to download {comic.Name}");
+                                continue;
+                            }
+                            string lastViewedComic = string.Empty;
+                            if (lastViewedUpdated.ContainsKey("xkcd"))
+                            {
+                                lastViewedComic = lastViewedUpdated["xkcd"];
+                            }
+                            if (string.Compare(newestDate, lastViewedComic) > 0)
+                            {
+                                lastViewedUpdated["xkcd"] = newestDate;
+                            }
+                        }
+                        break;
                     case "comicskingdom":
                         {
                             data = await GetResponse(comic.Name);
@@ -164,8 +187,20 @@ namespace ComicViewer
             {
                 writer.WriteLine("<html>");
                 writer.WriteLine("<body>");
-                if (comicKingdomList.Count > 0 || comicList.Count > 0 || politicalCartoons.Count > 0)
+                if (xkcdList.Count > 0 || comicKingdomList.Count > 0 || comicList.Count > 0 || politicalCartoons.Count > 0)
                 {
+                    foreach (var comic in xkcdList)
+                    {
+                        if (!first && comic.First)
+                        {
+                            writer.WriteLine("  <hr/>");
+                        }
+                        writer.WriteLine($"  {comic.Title}<br/>");
+                        writer.WriteLine($"  <a href=\"{comic.Url}\">");
+                        writer.WriteLine($"  <img src=\"{comic.Image}\" loading=\"lazy\">");
+                        writer.WriteLine($"  </a><br/>");
+                        first = false;
+                    }
                     foreach (var comic in comicKingdomList)
                     {
                         if (!first && comic.First)
@@ -319,7 +354,6 @@ namespace ComicViewer
                 {
                     string data = await GetResponse($"{comicUrl}{comic}{comicDate}");
                     string title = GetElement(data, "<title>", "</title>", true).TrimEnd();
-                    string url = $"{comicUrl}{comic}{comicDate}";
                     string image = GetElement(data, "<meta property=\"og:image\" content=\"", "\" />", true);
                     if (!string.IsNullOrWhiteSpace(image))
                     {
@@ -328,7 +362,7 @@ namespace ComicViewer
                             First = first,
                             Image = image,
                             Title = title,
-                            Url = url
+                            Url = $"{comicUrl}{comic}{comicDate}"
                         };
                         first = false;
                         Console.WriteLine($"{comic}{comicDate}");
@@ -402,7 +436,6 @@ namespace ComicViewer
                     Console.WriteLine($"{comic}{comicDate}");
                     string data = await GetResponse($"{comicUrl}{comic}{comicDate}");
                     string title = GetElement(data, "<title>", "</title>", true);
-                    string url = GetElement(data, "<meta property=\"og:url\" content=\"", "\" />", true);
                     string image = GetElement(data, "<meta property=\"og:image\" content=\"", "\" />", true);
                     if (!string.IsNullOrWhiteSpace(image))
                     {
@@ -411,7 +444,7 @@ namespace ComicViewer
                             First = first,
                             Image = image,
                             Title = title,
-                            Url = url
+                            Url = $"{comicUrl}{comic}{comicDate}"
                         };
                         comicList.Add(comicData);
                         if (string.Compare(comicDate, newestDate) > 0)
@@ -541,6 +574,144 @@ namespace ComicViewer
                 {
                     // If we are correctly processing the HTML file and finding comic dates, but didn't find the last one, go to next page, if possible and continue search.
 
+                }
+            }
+        }
+        #endregion
+
+        #region XKCD
+        private async Task<bool> ProcessXkcd(string comicUrl, string lastComic)
+        {
+            string data = string.Empty;
+            bool first = true;
+            if (string.IsNullOrEmpty(lastComic))
+            {
+                Console.WriteLine(comicUrl);
+                data = await GetResponse(comicUrl);
+                int pos = data.IndexOf("rel=\"prev\"");
+                if (pos == -1)
+                    return false;
+                pos = data.IndexOf("href=\"", pos + 1);
+                if (pos == -1)
+                    return false;
+                int pos2 = data.IndexOf("\"",pos + 6);
+                newestDate = data.Substring(pos + 7, pos2 - pos - 8);
+                string title = GetElement(data, "<title>", "</title>", true);
+                string image = GetElement(data, "<meta property=\"og:image\" content=\"", "\">", true).Replace("_2x","");
+                if (!string.IsNullOrWhiteSpace(image))
+                {
+                    ComicData comicData = new ComicData
+                    {
+                        First = first,
+                        Image = image,
+                        Title = title,
+                        Url = comicUrl + newestDate
+                    };
+                    xkcdList.Add(comicData);
+                    Console.WriteLine(comicData.Url);
+                    return true;
+                }
+            }
+            int comicIndex;
+            if (!int.TryParse(lastComic, out comicIndex))
+                return false;
+            comicIndex++;
+
+            data = await GetResponse($"{comicUrl}/{comicIndex}/");
+            if (string.IsNullOrWhiteSpace(data))
+                return false;
+            while (true)
+            {
+                string title = GetElement(data, "<title>", "</title>", true);
+                string image = GetElement(data, "<meta property=\"og:image\" content=\"", "\">", true).Replace("_2x", "");
+                if (!string.IsNullOrWhiteSpace(image))
+                {
+                    ComicData comicData = new ComicData
+                    {
+                        First = first,
+                        Image = image,
+                        Title = title,
+                        Url = $"{comicUrl}/{comicIndex}/"
+                    };
+                    xkcdList.Insert(0,comicData);
+                    newestDate = comicIndex.ToString();
+                    Console.WriteLine(comicData.Url);
+                    first = false;
+                }
+                else
+                {
+                    break;
+                }
+                if (data.IndexOf("\"#\"") != -1)
+                    break;
+                int pos = data.IndexOf("rel=\"next\"");
+                if (pos == -1)
+                    break;
+                pos = data.IndexOf("href=\"", pos + 1);
+                if (pos == -1)
+                    break;
+                int pos2 = data.IndexOf("\"", pos + 6);
+                lastComic = data.Substring(pos + 7, pos2 - pos - 8);
+                if (lastComic == "#")
+                    break;
+                if (!int.TryParse(lastComic, out comicIndex))
+                    break;
+                data = await GetResponse($"{comicUrl}/{comicIndex}/");
+                if (string.IsNullOrWhiteSpace(data))
+                    break;
+            }
+            return true;
+        }
+
+        private async Task xxx(string comicUrl, string comic, string comicDate, string lastDate)
+        {
+            bool first = true;
+            while (string.Compare(comicDate, lastDate) > 0)
+            {
+                try
+                {
+                    Console.WriteLine($"{comic}{comicDate}");
+                    string data = await GetResponse($"{comicUrl}{comic}{comicDate}");
+                    string title = GetElement(data, "<title>", "</title>", true);
+                    string image = GetElement(data, "<meta property=\"og:image\" content=\"", "\" />", true);
+                    if (!string.IsNullOrWhiteSpace(image))
+                    {
+                        ComicData comicData = new ComicData
+                        {
+                            First = first,
+                            Image = image,
+                            Title = title,
+                            Url = $"{comicUrl}{comic}{comicDate}"
+                        };
+                        comicList.Add(comicData);
+                        if (string.Compare(comicDate, newestDate) > 0)
+                        {
+                            newestDate = comicDate;
+                        }
+                        first = false;
+                        string date = GetElement(data, "<a role='button' href='", "'", true);
+                        date = date.Replace(comic, string.Empty);
+                        DateTime dt = DateTime.Parse(date);
+                        if (DateTime.Parse(comicDate) - DateTime.Parse(date) > new TimeSpan(30, 0, 0, 0))
+                        {
+                            int index = data.IndexOf("<a role='button' href='");
+                            if (index != -1)
+                            {
+                                string temp = data.Substring(index + 24);
+                                date = GetElement(temp, "<a role='button' href='", "'", true);
+                                date = date.Replace(comic, string.Empty);
+                            }
+                        }
+                        comicDate = date;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
                 }
             }
         }

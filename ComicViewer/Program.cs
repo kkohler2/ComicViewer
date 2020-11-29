@@ -191,10 +191,6 @@ namespace ComicViewer
                 {
                     foreach (var comic in xkcdList)
                     {
-                        if (!first && comic.First)
-                        {
-                            writer.WriteLine("  <hr/>");
-                        }
                         writer.WriteLine($"  {comic.Title}<br/>");
                         writer.WriteLine($"  <a href=\"{comic.Url}\">");
                         writer.WriteLine($"  <img src=\"{comic.Image}\" loading=\"lazy\">");
@@ -602,7 +598,6 @@ namespace ComicViewer
                 {
                     ComicData comicData = new ComicData
                     {
-                        First = first,
                         Image = image,
                         Title = title,
                         Url = comicUrl + newestDate
@@ -661,59 +656,6 @@ namespace ComicViewer
                     break;
             }
             return true;
-        }
-
-        private async Task xxx(string comicUrl, string comic, string comicDate, string lastDate)
-        {
-            bool first = true;
-            while (string.Compare(comicDate, lastDate) > 0)
-            {
-                try
-                {
-                    Console.WriteLine($"{comic}{comicDate}");
-                    string data = await GetResponse($"{comicUrl}{comic}{comicDate}");
-                    string title = GetElement(data, "<title>", "</title>", true);
-                    string image = GetElement(data, "<meta property=\"og:image\" content=\"", "\" />", true);
-                    if (!string.IsNullOrWhiteSpace(image))
-                    {
-                        ComicData comicData = new ComicData
-                        {
-                            First = first,
-                            Image = image,
-                            Title = title,
-                            Url = $"{comicUrl}{comic}{comicDate}"
-                        };
-                        comicList.Add(comicData);
-                        if (string.Compare(comicDate, newestDate) > 0)
-                        {
-                            newestDate = comicDate;
-                        }
-                        first = false;
-                        string date = GetElement(data, "<a role='button' href='", "'", true);
-                        date = date.Replace(comic, string.Empty);
-                        DateTime dt = DateTime.Parse(date);
-                        if (DateTime.Parse(comicDate) - DateTime.Parse(date) > new TimeSpan(30, 0, 0, 0))
-                        {
-                            int index = data.IndexOf("<a role='button' href='");
-                            if (index != -1)
-                            {
-                                string temp = data.Substring(index + 24);
-                                date = GetElement(temp, "<a role='button' href='", "'", true);
-                                date = date.Replace(comic, string.Empty);
-                            }
-                        }
-                        comicDate = date;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine(ex.Message);
-                }
-            }
         }
         #endregion
 

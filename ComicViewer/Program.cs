@@ -1,5 +1,4 @@
 ﻿// TODO: Paging for PoliticalCartoons.com
-//       Fix compression issue with ComicsKingdom
 
 using Microsoft.Extensions.Configuration;
 using System;
@@ -30,8 +29,13 @@ namespace ComicViewer
         {
             try
             {
+                int daysBack = 0;
+                if (args.Length == 1)
+                {
+                    int.TryParse(args[0], out daysBack);
+                }
                 Program program = new Program();
-                await program.Run();
+                await program.Run(daysBack);
             }
             catch (Exception ex)
             {
@@ -39,7 +43,7 @@ namespace ComicViewer
             }
         }
 
-        private async Task Run()
+        private async Task Run(int daysBack = 0) // 0 for don't override last viewed date
         {
             lastViewedFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
             lastViewedFile = Path.Combine(lastViewedFile, "Kohler");
@@ -73,7 +77,7 @@ namespace ComicViewer
                             {
                                 lastComic = lastViewed["xkcd"];
                             }
-                            if (!await ProcessXkcd(comic.Name, lastComic))
+                            if (!await ProcessXkcd(comic.Name, lastComic, daysBack))
                             {
                                 Console.WriteLine($"Unable to download {comic.Name}");
                                 continue;
@@ -107,6 +111,10 @@ namespace ComicViewer
                                 lastDate = DateTime.Today.Date - new TimeSpan(14, 0, 0, 0);
                                 newestDate = lastDate.ToString("yyyy-MM-dd");
                             }
+                            if (daysBack > 0)
+                            {
+                                lastDate = DateTime.Now.Date - new TimeSpan(daysBack, 0, 0, 0);
+                            }
                             await ProcessComicsKingdom(comic.Name, data, lastDate);
                             string lastViewedDate = string.Empty;
                             if (lastViewedUpdated.ContainsKey("comicskingdom"))
@@ -137,6 +145,10 @@ namespace ComicViewer
                                 lastDate = DateTime.Today.Date - new TimeSpan(14, 0, 0, 0);
                                 newestDate = lastDate.ToString("yyyy/MM/dd");
                             }
+                            if (daysBack > 0)
+                            {
+                                lastDate = DateTime.Now.Date - new TimeSpan(daysBack, 0, 0, 0);
+                            }
                             await ProcessGoComic(comic.Name, data, lastDate);
                             string lastViewedDate = string.Empty;
                             if (lastViewedUpdated.ContainsKey("gocomics"))
@@ -166,6 +178,10 @@ namespace ComicViewer
                             {
                                 lastDate = DateTime.Today.Date - new TimeSpan(14, 0, 0, 0);
                                 newestDate = lastDate.ToString("yyyy/MM/dd");
+                            }
+                            if (daysBack > 0)
+                            {
+                                lastDate = DateTime.Now.Date - new TimeSpan(daysBack, 0, 0, 0);
                             }
                             await ProcessPoliticalCartoons(comic.Name, data, lastDate);
                             string lastViewedDate = string.Empty;
@@ -363,9 +379,9 @@ namespace ComicViewer
                         first = false;
                         Console.WriteLine($"{comic}{comicDate}");
                         comicKingdomList.Add(comicData);
-                        if (string.Compare(comicDate, newestDate) > 0)
+                        if (string.Compare(comicDate.Replace('-','/'), newestDate) > 0)
                         {
-                            newestDate = comicDate;
+                            newestDate = comicDate.Replace('-', '/');
                         }
                         int pos = data.IndexOf("date-slug");
                         comicDate = string.Empty;
@@ -576,7 +592,7 @@ namespace ComicViewer
         #endregion
 
         #region XKCD
-        private async Task<bool> ProcessXkcd(string comicUrl, string lastComic)
+        private async Task<bool> ProcessXkcd(string comicUrl, string lastComic, int maxComics)
         {
             string data = string.Empty;
             bool first = true;
@@ -615,8 +631,10 @@ namespace ComicViewer
             data = await GetResponse($"{comicUrl}/{comicIndex}/");
             if (string.IsNullOrWhiteSpace(data))
                 return false;
+            int comicsFound = 0;
             while (true)
             {
+                comicsFound++;
                 string title = GetElement(data, "<title>", "</title>", true);
                 string image = GetElement(data, "<meta property=\"og:image\" content=\"", "\">", true).Replace("_2x", "");
                 if (!string.IsNullOrWhiteSpace(image))
@@ -637,6 +655,10 @@ namespace ComicViewer
                 {
                     break;
                 }
+
+                if (comicsFound == maxComics)
+                    break;
+
                 if (data.IndexOf("\"#\"") != -1)
                     break;
                 int pos = data.IndexOf("rel=\"next\"");

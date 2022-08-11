@@ -523,10 +523,14 @@ namespace ComicViewer
             for (var i = 0; i < lines.Length; i++)
             {
                 var l = lines[i];
-                int pos = l.IndexOf("<span class=\"cartoon-published text-right\">");
+                int pos = l.IndexOf("<span class=\"cartoon-published");
+                if (pos != -1) 
+                {
+                    pos = l.IndexOf(">");
+                }
                 if (pos != -1)
                 {
-                    tmp = l.Substring(pos + 43);
+                    tmp = l.Substring(pos + 1);
                     pos = tmp.IndexOf('<');
                     if (pos != -1)
                     {

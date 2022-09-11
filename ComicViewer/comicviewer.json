@@ -1,7 +1,7 @@
 ﻿{
   "Comics": {
-    "File": "D:\\Source\\ComicViewer\\index.html",
     "Browser": "C:\\Program Files\\Mozilla Firefox\\firefox.exe",
+    "NetworkShare": "",
     "Website": [
       {
         "Name": "https://xkcd.com/",

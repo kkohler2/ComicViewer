@@ -20,6 +20,7 @@ namespace ComicViewer
         private List<ComicData> comicList = new List<ComicData>();
         private List<ComicData> comicKingdomList = new List<ComicData>();
         private string lastViewedFile;
+        private string lastViewedFileLocal;
         private Dictionary<string, string> lastViewed = new Dictionary<string, string>();
         private Dictionary<string, string> lastViewedUpdated = new Dictionary<string, string>();
         public List<PoliticalCartoon> politicalCartoons = new List<PoliticalCartoon>();
@@ -45,26 +46,11 @@ namespace ComicViewer
 
         private async Task Run(int daysBack = 0) // 0 for don't override last viewed date
         {
-            lastViewedFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-            lastViewedFile = Path.Combine(lastViewedFile, "Kohler");
-            Directory.CreateDirectory(lastViewedFile);
-            lastViewedFile = Path.Combine(lastViewedFile, "ComicViewer.json");
-            if (File.Exists(lastViewedFile))
-            {
-                using(StreamReader reader = new StreamReader(lastViewedFile))
-                {
-                    string data = reader.ReadToEnd();
-                    lastViewed = JsonSerializer.Deserialize<Dictionary<string, string>>(data);
-                    lastViewedUpdated = JsonSerializer.Deserialize<Dictionary<string, string>>(data);
-                }
-            }
-            IConfiguration config = new ConfigurationBuilder()
-                            .AddJsonFile("comicviewer.json", true, true)
-                            .Build();
+            (Comics configuration, Website[] websites) = GetComicList();
 
-            var configuration = new Comics();
-            config.GetSection("Comics").Bind(configuration);
-            foreach (var comic in configuration.Website)
+            GetLastViewed(configuration);
+
+            foreach (var comic in websites)
             {
                 DateTime lastDate;
                 string data = string.Empty;
@@ -271,6 +257,10 @@ namespace ComicViewer
                 {
                     writer.WriteLine(json);
                 }
+                if (lastViewedFile != lastViewedFileLocal)
+                {
+                    File.Copy(lastViewedFile, lastViewedFileLocal, true);
+                }
             }
             catch (Exception ex)
             {
@@ -281,6 +271,58 @@ namespace ComicViewer
             process.StartInfo.FileName = configuration.Browser;
             process.StartInfo.Arguments = htmlFile;
             process.Start();
+        }
+
+        private void GetLastViewed(Comics configuration)
+        {
+            lastViewedFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+            lastViewedFile = Path.Combine(lastViewedFile, "Kohler");
+            Directory.CreateDirectory(lastViewedFile);
+            lastViewedFile = Path.Combine(lastViewedFile, "ComicViewer.json");
+            lastViewedFileLocal = lastViewedFile;
+            if (File.Exists(lastViewedFile))
+            {
+                using (StreamReader reader = new StreamReader(lastViewedFile))
+                {
+                    string data = reader.ReadToEnd();
+                    lastViewed = JsonSerializer.Deserialize<Dictionary<string, string>>(data);
+                    lastViewedUpdated = JsonSerializer.Deserialize<Dictionary<string, string>>(data);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(configuration.NetworkShare) && File.Exists(Path.Combine(configuration.NetworkShare, "ComicsLastViewed.json")))
+            {
+                lastViewedFile = Path.Combine(configuration.NetworkShare, "ComicsLastViewed.json");
+                using (StreamReader reader = new StreamReader(lastViewedFile))
+                {
+                    string data = reader.ReadToEnd();
+                    lastViewed = JsonSerializer.Deserialize<Dictionary<string, string>>(data);
+                    lastViewedUpdated = JsonSerializer.Deserialize<Dictionary<string, string>>(data);
+                }
+            }
+        }
+
+        public (Comics configuration, Website[] websites) GetComicList()
+        {
+            IConfiguration config = new ConfigurationBuilder()
+                            .AddJsonFile("comicviewer.json", true, true)
+                            .Build();
+
+            Comics configuration = new Comics();
+            config.GetSection("Comics").Bind(configuration);
+            var websites = configuration.Website;
+            if (!string.IsNullOrWhiteSpace(configuration.NetworkShare) && File.Exists(Path.Combine(configuration.NetworkShare, "ComicList.json")))
+            {
+                string comicListFile = Path.Combine(configuration.NetworkShare, "ComicList.json");
+                IConfiguration nsConfig = new ConfigurationBuilder()
+                                .AddJsonFile(comicListFile, true, true)
+                                .Build();
+
+                var nsConfiguration = new Comics();
+                nsConfig.GetSection("Comics").Bind(nsConfiguration);
+                websites = nsConfiguration.Website;
+            }
+            return (configuration, websites);
         }
 
         private async Task<string> GetResponse(string url)
@@ -722,6 +764,7 @@ namespace ComicViewer
 
     public class Comics
     {
+        public string NetworkShare { get; set; }
         public string Browser { get; set; }
         public Website[] Website { get; set; }
     }

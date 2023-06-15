@@ -683,6 +683,18 @@ namespace ComicViewer
                 comicsFound++;
                 string title = GetElement(data, "<title>", "</title>", true);
                 string image = GetElement(data, "<meta property=\"og:image\" content=\"", "\">", true).Replace("_2x", "");
+                if (string.IsNullOrWhiteSpace(image)) 
+                {
+                    int index = data.IndexOf("<img src=\"//imgs.xkcd.com/comics/");
+                    if (index > -1)
+                    {
+                        string temp = data.Substring(index + 10);
+                        index = temp.IndexOf("\"");
+                        image = temp.Substring(0, index);
+                        image = "https:" + image;
+                    }
+                }
+
                 if (!string.IsNullOrWhiteSpace(image))
                 {
                     ComicData comicData = new ComicData
@@ -692,7 +704,7 @@ namespace ComicViewer
                         Title = title,
                         Url = $"{comicUrl}/{comicIndex}/"
                     };
-                    xkcdList.Insert(0,comicData);
+                    xkcdList.Add(comicData);
                     newestDate = comicIndex.ToString();
                     Console.WriteLine(comicData.Url);
                     first = false;

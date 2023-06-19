@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
@@ -15,7 +16,6 @@ namespace ComicViewer
 {
     class Program
     {
-        private readonly HttpClient _HttpClient = new HttpClient();
         private List<ComicData> xkcdList = new List<ComicData>();
         private List<ComicData> comicList = new List<ComicData>();
         private List<ComicData> comicKingdomList = new List<ComicData>();
@@ -53,7 +53,7 @@ namespace ComicViewer
             foreach (var comic in websites)
             {
                 DateTime lastDate;
-                string data = string.Empty;
+                string data;
                 switch (comic.Type)
                 {
                     case "xkcd":
@@ -604,18 +604,25 @@ namespace ComicViewer
                                     };
                                     l = lines[i - 8];
                                     cartoon.Title = l.Replace(" </div>", "");
-                                    string data = await GetResponse(cartoon.Url);
-                                    string tag = $"<IMG ID=\"{sku}\" src=\"";
-                                    pos = data.IndexOf(tag);
-                                    if (pos != -1)
+                                    if (politicalCartoons.Any(x => x.Url == cartoon.Url))
                                     {
-                                        data = data.Substring(pos + tag.Length);
-                                        pos = data.IndexOf('"');
+                                        Console.WriteLine($"Duplicate Cartoon: {cartoon.Url}");
+                                    }
+                                    else
+                                    {
+                                        string data = await GetResponse(cartoon.Url);
+                                        string tag = $"<IMG ID=\"{sku}\" src=\"";
+                                        pos = data.IndexOf(tag);
                                         if (pos != -1)
                                         {
-                                            cartoon.Image = "https:" + data.Substring(0,pos);
-                                            Console.WriteLine($"{cartoon.Author} {cartoon.Date}");
-                                            politicalCartoons.Add(cartoon);
+                                            data = data.Substring(pos + tag.Length);
+                                            pos = data.IndexOf('"');
+                                            if (pos != -1)
+                                            {
+                                                cartoon.Image = "https:" + data.Substring(0, pos);
+                                                Console.WriteLine($"{cartoon.Author} {cartoon.Date}");
+                                                politicalCartoons.Add(cartoon);
+                                            }
                                         }
                                     }
                                 }

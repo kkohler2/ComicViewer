@@ -4,10 +4,6 @@
     "NetworkShare": "",
     "Website": [
       {
-        "Name": "https://xkcd.com/",
-        "Type": "xkcd"
-      },
-      {
         "Name": "https://www.comicskingdom.com/bizarro",
         "Type": "comicskingdom"
       },

@@ -388,11 +388,11 @@ namespace ComicViewer
                 index = data.IndexOf(comic);
                 if (index != -1)
                 {
-                    int index2 = data.IndexOf('\'', index);
+                    string data2 = data.Substring(index + comic.Length);
+                    int index2 = data2.IndexOf('\"');
                     if (index2 != -1)
                     {
-                        string comicDate = data.Substring(index, index2 - index);
-                        comicDate = comicDate.Replace(comic, string.Empty);
+                        string comicDate = data2.Substring(0,index2);
                         await ProcessProcessComicsKingdomDate(comicUrl, comic, comicDate, lastDate);
                     }
                 }
@@ -408,7 +408,7 @@ namespace ComicViewer
                 {
                     string data = await GetResponse($"{comicUrl}{comic}{comicDate}");
                     string title = GetElement(data, "<title>", "</title>", true).TrimEnd();
-                    string image = GetElement(data, "<meta property=\"og:image\" content=\"", "\" />", true);
+                    string image = GetElement(data, "<meta property=\"og:image\" content=\"", "\"/>", true);
                     if (!string.IsNullOrWhiteSpace(image))
                     {
                         ComicData comicData = new ComicData
@@ -425,21 +425,9 @@ namespace ComicViewer
                         {
                             newestDate = comicDate.Replace('-', '/');
                         }
-                        int pos = data.IndexOf("date-slug");
-                        comicDate = string.Empty;
-                        if (pos != -1)
-                        {
-                            pos = data.IndexOf("\"", pos);
-                            if (pos != -1)
-                            {
-                                string temp = data.Substring(pos + 1);
-                                pos = temp.IndexOf("\"");
-                                if (pos != -1)
-                                {
-                                    comicDate = temp.Substring(0, pos);
-                                }
-                            }
-                        }
+                        DateTime dateTime = DateTime.Parse(comicDate);
+                        dateTime -= new TimeSpan(1, 0, 0, 0);
+                        comicDate = dateTime.ToString("yyyy-MM-dd");
                         if (comicDate == string.Empty)
                             break;
                     }

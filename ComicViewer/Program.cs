@@ -42,7 +42,7 @@ namespace ComicViewer
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error: " + ex.Message);
+                await Console.Out.WriteLineAsync("Error: " + ex.Message);
             }
         }
 
@@ -67,7 +67,7 @@ namespace ComicViewer
                             }
                             if (!await ProcessXkcd(comic.Name, lastComic, daysBack))
                             {
-                                Console.WriteLine($"Unable to download {comic.Name}");
+                                await Console.Out.WriteLineAsync($"Unable to download {comic.Name}");
                                 continue;
                             }
                             string lastViewedComic = string.Empty;
@@ -86,7 +86,7 @@ namespace ComicViewer
                             data = await GetResponse(comic.Name);
                             if (string.IsNullOrWhiteSpace(data))
                             {
-                                Console.WriteLine($"Unable to download {comic.Name}");
+                                await Console.Out.WriteLineAsync($"Unable to download {comic.Name}");
                                 continue;
                             }
                             if (lastViewed.ContainsKey(comic.Name))
@@ -148,7 +148,7 @@ namespace ComicViewer
                             data = await GetResponse(comic.Name);
                             if (string.IsNullOrWhiteSpace(data))
                             {
-                                Console.WriteLine($"Unable to download {comic.Name}");
+                                await Console.Out.WriteLineAsync($"Unable to download {comic.Name}");
                                 continue;
                             }
                             if (lastViewed.ContainsKey(comic.Name))
@@ -415,7 +415,7 @@ namespace ComicViewer
                             Url = $"{comicUrl}{comic}{comicDate}"
                         };
                         first = false;
-                        Console.WriteLine(comic + " " + comicDate);
+                        await Console.Out.WriteLineAsync(comic + " " + comicDate);
                         comicKingdomList.Add(comicData);
                         if (string.Compare(comicDate.Replace('-','/'), newestDate) > 0)
                         {
@@ -455,6 +455,10 @@ namespace ComicViewer
 
                 bool first = true;
                 string pageUrl = $"{comicUrl}/{workingDate.ToString("yyyy/MM/dd")}";
+                if (dtLastDate == DateTime.Today.Date - new TimeSpan(1, 0, 0, 0)) // i.e. yesterday
+                {
+                    pageUrl = comicUrl;
+                }
                 while (true)
                 {
                     IPlaywright playwright = await Playwright.CreateAsync();
@@ -500,7 +504,7 @@ namespace ComicViewer
                         {
                             var imageContent = content.Substring(index);
                             index = imageContent.IndexOf("\"");
-                            if (index != -1)
+                             if (index != -1)
                             {
                                 imageContent = imageContent.Substring(0, index);
                             }
@@ -704,7 +708,7 @@ namespace ComicViewer
                                     cartoon.Title = l.Replace(" </div>", "");
                                     if (politicalCartoons.Exists(x => x.Url == cartoon.Url))
                                     {
-                                        Console.WriteLine($"Duplicate Cartoon: {cartoon.Url}");
+                                        await Console.Out.WriteLineAsync($"Duplicate Cartoon: {cartoon.Url}");
                                     }
                                     else
                                     {
@@ -718,7 +722,7 @@ namespace ComicViewer
                                             if (pos != -1)
                                             {
                                                 cartoon.Image = "https:" + data.Substring(0, pos);
-                                                Console.WriteLine($"{cartoon.Author} {cartoon.Date}");
+                                                await Console.Out.WriteLineAsync($"{cartoon.Author} {cartoon.Date}");
                                                 politicalCartoons.Add(cartoon);
                                             }
                                         }
@@ -749,7 +753,7 @@ namespace ComicViewer
             bool first = true;
             if (string.IsNullOrEmpty(lastComic))
             {
-                Console.WriteLine(comicUrl);
+                await Console.Out.WriteLineAsync(comicUrl);
                 data = await GetResponse(comicUrl);
                 int pos = data.IndexOf("rel=\"prev\"");
                 if (pos == -1)
@@ -770,7 +774,7 @@ namespace ComicViewer
                         Url = comicUrl + newestDate
                     };
                     xkcdList.Add(comicData);
-                    Console.WriteLine(comicData.Url);
+                    await Console.Out.WriteLineAsync(comicData.Url);
                     return true;
                 }
             }
@@ -811,7 +815,7 @@ namespace ComicViewer
                     };
                     xkcdList.Add(comicData);
                     newestDate = comicIndex.ToString();
-                    Console.WriteLine(comicData.Url);
+                    await Console.Out.WriteLineAsync(comicData.Url);
                     first = false;
                 }
                 else

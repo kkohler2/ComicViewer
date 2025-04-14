@@ -1,6 +1,8 @@
 ﻿// TODO: Paging for PoliticalCartoons.com
 
+using HtmlAgilityPack;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Playwright;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -115,12 +117,6 @@ namespace ComicViewer
                         break;
                     case "gocomics":
                         {
-                            data = await GetResponse(comic.Name);
-                            if (string.IsNullOrWhiteSpace(data))
-                            {
-                                Console.WriteLine($"Unable to download {comic.Name}");
-                                continue;
-                            }
                             if (lastViewed.ContainsKey(comic.Name))
                             {
                                 newestDate = lastViewed[comic.Name];
@@ -135,7 +131,7 @@ namespace ComicViewer
                             {
                                 lastDate = DateTime.Now.Date - new TimeSpan(daysBack, 0, 0, 0);
                             }
-                            await ProcessGoComic(comic.Name, data, lastDate);
+                            await ProcessGoComic(comic.Name, lastDate);
                             string lastViewedDate = string.Empty;
                             if (lastViewedUpdated.ContainsKey(comic.Name))
                             {
@@ -336,7 +332,7 @@ namespace ComicViewer
                 webRequest.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8";
                 webRequest.Headers.Add("Accept-Encoding", "gzip,deflate");
                 webRequest.Headers.Add("Accept-Language", "en-US,en;q=0.5");
-                webRequest.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0");
+                webRequest.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:137.0) Gecko/20100101 Firefox/137.0");
                 webRequest.Referer = url;
                 using (HttpWebResponse webResponse = (HttpWebResponse)await webRequest.GetResponseAsync())
                 {
@@ -419,7 +415,7 @@ namespace ComicViewer
                             Url = $"{comicUrl}{comic}{comicDate}"
                         };
                         first = false;
-                        Console.WriteLine($"{comic}{comicDate}");
+                        Console.WriteLine(comic + " " + comicDate);
                         comicKingdomList.Add(comicData);
                         if (string.Compare(comicDate.Replace('-','/'), newestDate) > 0)
                         {
@@ -445,79 +441,194 @@ namespace ComicViewer
         #endregion
 
         #region GoComic
-        private async Task ProcessGoComic(string comicUrl,string data, DateTime dtLastDate)
+        private async Task ProcessGoComic(string comicUrl, DateTime dtLastDate)
         {
-            string lastDate = dtLastDate.ToString("yyyy/MM/dd");
-            int index = comicUrl.LastIndexOf("/");
-            if (index != -1)
+            try
             {
-                string comic = comicUrl.Substring(index);
-                comicUrl = comicUrl.Replace(comic, string.Empty);
-                comic += "/";
-                index = data.IndexOf(comic);
+                DateTime workingDate = dtLastDate;
+                string comic = comicUrl;
+                int index = comicUrl.LastIndexOf("/");
                 if (index != -1)
                 {
-                    int index2 = data.IndexOf('"', index);
-                    if (index2 != -1)
-                    {
-                        string comicDate = data.Substring(index, index2 - index);
-                        comicDate = comicDate.Replace(comic, string.Empty);
-                        await ProcessGoComicDate(comicUrl, comic, comicDate, lastDate);
-                    }
+                    comic = comicUrl.Substring(index + 1);
                 }
-            }
-        }
 
-        private async Task ProcessGoComicDate(string comicUrl, string comic, string comicDate, string lastDate)
-        {
-            bool first = true;
-            while(string.Compare(comicDate, lastDate) > 0)
-            {
-                try
+                bool first = true;
+                string pageUrl = $"{comicUrl}/{workingDate.ToString("yyyy/MM/dd")}";
+                while (true)
                 {
-                    Console.WriteLine($"{comic}{comicDate}");
-                    string data = await GetResponse($"{comicUrl}{comic}{comicDate}");
-                    string title = GetElement(data, "<title>", "</title>", true);
-                    string image = GetElement(data, "<meta property=\"og:image\" content=\"", "\" />", true);
-                    if (!string.IsNullOrWhiteSpace(image))
+                    IPlaywright playwright = await Playwright.CreateAsync();
+                    IBrowser browser = await playwright.Webkit.LaunchAsync();
+                    IPage page = await browser.NewPageAsync();
+
+                    await page.GotoAsync(pageUrl);
+                    var content = await page.ContentAsync();
+                    var doc = new HtmlDocument();
+                    doc.LoadHtml(content);
+                    var url = page.Url; // url retrieved
+                    string comicDate = string.Empty;
+                    if (url == comicUrl)
                     {
-                        ComicData comicData = new ComicData
+                        var buttons = doc.DocumentNode.SelectNodes(".//button").ToList();
+                        comicDate = string.Empty;
+                        foreach (var button in buttons)
                         {
-                            First = first,
-                            Image = image,
-                            Title = title,
-                            Url = $"{comicUrl}{comic}{comicDate}"
-                        };
-                        comicList.Add(comicData);
-                        if (string.Compare(comicDate, newestDate) > 0)
-                        {
-                            newestDate = comicDate;
-                        }
-                        first = false;
-                        string date = GetElement(data, "<a role='button' href='", "'", true);
-                        date = date.Replace(comic, string.Empty);
-                        if (DateTime.Parse(comicDate, CultureInfo.InvariantCulture) - DateTime.Parse(date, CultureInfo.InvariantCulture) > new TimeSpan(30, 0, 0, 0))
-                        {
-                            int index = data.IndexOf("<a role='button' href='");
-                            if (index != -1)
+                            comicDate = GetDate(button.InnerText);
+                            if (!string.IsNullOrWhiteSpace(comicDate))
                             {
-                                string temp = data.Substring(index + 24);
-                                date = GetElement(temp, "<a role='button' href='", "'", true);
-                                date = date.Replace(comic, string.Empty);
+                                break;
                             }
                         }
-                        comicDate = date;
                     }
                     else
                     {
-                        break;
+                        string temp = url.Replace(comicUrl + "/", string.Empty);
+                        workingDate = DateTime.Parse(temp, CultureInfo.InvariantCulture);
+                        comicDate = workingDate.ToString("yyyy/MM/dd");
                     }
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine(ex.Message);
+                    if (string.IsNullOrWhiteSpace(comicDate))
+                    {
+                        return;
+                    }
+
+                    DateTime currentDate = DateTime.Parse(comicDate, CultureInfo.InvariantCulture);
+                    if (currentDate != dtLastDate)
+                    {
+                        // Ignore the last comic previously retrieved
+                        index = content.IndexOf("https://featureassets.gocomics.com/assets/");
+                        if (index != -1)
+                        {
+                            var imageContent = content.Substring(index);
+                            index = imageContent.IndexOf("\"");
+                            if (index != -1)
+                            {
+                                imageContent = imageContent.Substring(0, index);
+                            }
+                            index = imageContent.IndexOf("?");
+                            if (index != -1)
+                            {
+                                imageContent = imageContent.Substring(0, index);
+                                var comicData = new ComicData
+                                {
+                                    First = first,
+                                    Image = imageContent,
+                                    Title = comic + " " + currentDate.ToString("MM/dd/yyyy"),
+                                    Url = pageUrl
+                                };
+                                comicList.Add(comicData);
+                                newestDate = comicDate;
+                                await Console.Out.WriteLineAsync($"{comic} {comicDate}");
+                                first = false;
+                            }
+                        }
+                    }
+
+                    if (url == comicUrl)
+                        break;
+                    pageUrl = GetNextDate(doc, comic, comicUrl, currentDate.ToString("yyyy/MM/dd"));
+                    if (string.IsNullOrWhiteSpace(pageUrl))
+                        break;
                 }
             }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+            }
+        }
+
+        private static string GetNextDate(HtmlDocument doc, string comic, string comicUrl, string currentComicDate)
+        {
+            string pageUrl = string.Empty;
+            var anchors = doc.DocumentNode.SelectNodes("//*[@href]").ToList();
+            var comicHref = "/" + comic;
+            foreach (var anchor in anchors)
+            {
+                var hrefs = anchor.Attributes.Where(x => x.Name == "href" && x.Value.StartsWith(comicHref)).ToList();
+                if (hrefs.Count > 0)
+                {
+                    if (hrefs[0].Value == comicHref)
+                    {
+                        pageUrl = comicUrl;
+                        break;
+                    }
+                    else
+                    {
+                        string temp = hrefs[0].Value.Replace(comicHref + "/", string.Empty);
+                        if (string.Compare(temp, currentComicDate) > 0)
+                        {
+                            pageUrl = comicUrl + "/" + temp.Replace("/" + comic + "/", string.Empty);
+                            break;
+                        }
+                    }
+                }
+            }
+            return pageUrl;
+        }
+
+        public string GetDate(string innerText)
+        {
+            int index = innerText.IndexOf(',');
+            if (index != -1)
+            {
+                var dayString = innerText.Substring(0, index);
+                var daysOfWeek = Enum.GetValues(typeof(DayOfWeek));
+                foreach(var dayOfWeek in daysOfWeek)
+                {
+                    if (dayString.ToLower().Contains(dayOfWeek.ToString().ToLower()))
+                    {
+                        dayString = innerText.Substring(dayString.Length + 2);
+                        index = dayString.IndexOf(' ');
+                        string monthString = dayString.Substring(0, index);
+                        dayString = dayString.Substring(index + 1);
+                        int day;
+                        int.TryParse(dayString, out day);
+                        int month = 0;
+                        switch(monthString)
+                        {
+                            case "January":
+                                month = 1;
+                                break;
+                            case "February":
+                                month = 2;
+                                break;
+                            case "March":
+                                month = 3;
+                                break;
+                            case "April":
+                                month = 4;
+                                break;
+                            case "May":
+                                month = 5;
+                                break;
+                            case "June":
+                                month = 6;
+                                break;
+                            case "July":
+                                month = 7;
+                                break;
+                            case "August":
+                                month = 8;
+                                break;
+                            case "September":
+                                month = 9;
+                                break;
+                            case "October":
+                                month = 10;
+                                break;
+                            case "November":
+                                month = 11;
+                                break;
+                            case "December":
+                                month = 12;
+                                break;
+                        }
+
+                        DateTime date = new DateTime(DateTime.Now.Year, month, day);
+                        return date.ToString("yyyy/MM/dd");
+                    }
+                }
+            }
+            return string.Empty;
         }
         #endregion
 

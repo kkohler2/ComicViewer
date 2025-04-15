@@ -4,8 +4,336 @@
     "NetworkShare": "",
     "Website": [
       {
+        "Name": "https://www.comicskingdom.com/bizarro",
+        "Type": "comicskingdom"
+      },
+      {
+        "Name": "https://www.comicskingdom.com/jimmy-margulies",
+        "Type": "comicskingdom"
+      },
+      {
+        "Name": "https://www.comicskingdom.com/kirk-walters",
+        "Type": "comicskingdom"
+      },
+      {
+        "Name": "https://www.comicskingdom.com/mike-smith",
+        "Type": "comicskingdom"
+      },
+      {
+        "Name": "https://www.gocomics.com/9to5",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/bliss",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/bobgorrell",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/boundandgagged",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/brevity",
+        "Type": "gocomics"
+      },
+      {
         "Name": "https://www.gocomics.com/calvinandhobbes",
         "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/chipbok",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/chrisbritt",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/claybennett",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/danasummers",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/dilbert-classics",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/drewsheneman",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/farcus",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/foxtrot",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/foxtrotclassics",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/henrypayne",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/garyvarvel",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/jackohman",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/jeffdanziger",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/jeffstahler",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/johndeering",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/kal",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/kevin-necessary-editorial-cartoons",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/lisabenson",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/laloalcaraz",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/marshallramsey",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/mattdavies",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/michaelramirez",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/mikeluckovich",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/mike-lester",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/nonsequitur",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/phil-hands",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/pluggers",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/robert-ariail",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/robrogers",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/pricklycity",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/scottstantis",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/shoe",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/stevebenson",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/stevebreen",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/thebuckets",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/tim-campbell",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/viewsamerica",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/walthandelsman",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/waynovision",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/workingitout",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://www.gocomics.com/wrong-hands",
+        "Type": "gocomics"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/alla-and-chavdar/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/angel-boligan/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/bart-van-leeuwen/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/bill-day/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/bob-englehart/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/bruce-plante/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/daryl-cagle/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/dave-granlund/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/emad-hajjaj/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/gatis-sluka/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/guy-parsons/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/jimmy-margulies/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/joep-bertrams/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/joe-heller/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/john-cole/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/john-darkow/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/kevin-siers/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/luojie/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/michael-kountouris/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/monte-wolverton/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/nikola-listes/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/paresh-nath/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/pat-bagley/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/pat-byrnes/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/petar-pismestrovic/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/rainer-hachfeld/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/randall-enos/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/rick-mckee/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/schot/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/steve-sack/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://politicalcartoons.com/cartoonist/taylor-jones/",
+        "Type": "politicalcartoons"
+      },
+      {
+        "Name": "https://xkcd.com/",
+        "Type": "xkcd"
       }
     ]
   }

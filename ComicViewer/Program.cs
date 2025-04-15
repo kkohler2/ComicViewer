@@ -443,100 +443,132 @@ namespace ComicViewer
         #region GoComic
         private async Task ProcessGoComic(string comicUrl, DateTime dtLastDate)
         {
+            IPlaywright playwright = await Playwright.CreateAsync();
+            IBrowser browser = await playwright.Webkit.LaunchAsync();
+            IPage page = null;
             try
             {
-                DateTime workingDate = dtLastDate;
-                string comic = comicUrl;
-                int index = comicUrl.LastIndexOf("/");
-                if (index != -1)
+                try
                 {
-                    comic = comicUrl.Substring(index + 1);
-                }
-
-                bool first = true;
-                string pageUrl = $"{comicUrl}/{workingDate.ToString("yyyy/MM/dd")}";
-                if (dtLastDate == DateTime.Today.Date - new TimeSpan(1, 0, 0, 0)) // i.e. yesterday
-                {
-                    pageUrl = comicUrl;
-                }
-                while (true)
-                {
-                    IPlaywright playwright = await Playwright.CreateAsync();
-                    IBrowser browser = await playwright.Webkit.LaunchAsync();
-                    IPage page = await browser.NewPageAsync();
-
-                    await page.GotoAsync(pageUrl);
-                    var content = await page.ContentAsync();
-                    var doc = new HtmlDocument();
-                    doc.LoadHtml(content);
-                    var url = page.Url; // url retrieved
-                    string comicDate = string.Empty;
-                    if (url == comicUrl)
+                    DateTime workingDate = dtLastDate;
+                    string comic = comicUrl;
+                    int index = comicUrl.LastIndexOf("/");
+                    if (index != -1)
                     {
-                        var buttons = doc.DocumentNode.SelectNodes(".//button").ToList();
-                        comicDate = string.Empty;
-                        foreach (var button in buttons)
+                        comic = comicUrl.Substring(index + 1);
+                    }
+
+                    bool first = true;
+                    string pageUrl = $"{comicUrl}/{workingDate.ToString("yyyy/MM/dd")}";
+                    if (dtLastDate == DateTime.Today.Date - new TimeSpan(1, 0, 0, 0)) // i.e. yesterday
+                    {
+                        pageUrl = comicUrl;
+                    }
+                    while (true)
+                    {
+                        if (page != null)
                         {
-                            comicDate = GetDate(button.InnerText);
-                            if (!string.IsNullOrWhiteSpace(comicDate))
+                            await page.CloseAsync();
+                            page = null;
+                        }
+                        page = await browser.NewPageAsync();
+
+                        await page.GotoAsync(pageUrl);
+                        var content = await page.ContentAsync();
+                        var doc = new HtmlDocument();
+                        doc.LoadHtml(content);
+                        var url = page.Url; // url retrieved
+                        string comicDate = string.Empty;
+                        if (url == comicUrl)
+                        {
+                            var buttons = doc.DocumentNode.SelectNodes(".//button").ToList();
+                            comicDate = string.Empty;
+                            foreach (var button in buttons)
                             {
-                                break;
+                                comicDate = GetDate(button.InnerText);
+                                if (!string.IsNullOrWhiteSpace(comicDate))
+                                {
+                                    break;
+                                }
                             }
                         }
-                    }
-                    else
-                    {
-                        string temp = url.Replace(comicUrl + "/", string.Empty);
-                        workingDate = DateTime.Parse(temp, CultureInfo.InvariantCulture);
-                        comicDate = workingDate.ToString("yyyy/MM/dd");
-                    }
-                    if (string.IsNullOrWhiteSpace(comicDate))
-                    {
-                        return;
-                    }
-
-                    DateTime currentDate = DateTime.Parse(comicDate, CultureInfo.InvariantCulture);
-                    if (currentDate != dtLastDate)
-                    {
-                        // Ignore the last comic previously retrieved
-                        index = content.IndexOf("https://featureassets.gocomics.com/assets/");
-                        if (index != -1)
+                        else
                         {
-                            var imageContent = content.Substring(index);
-                            index = imageContent.IndexOf("\"");
-                             if (index != -1)
-                            {
-                                imageContent = imageContent.Substring(0, index);
-                            }
-                            index = imageContent.IndexOf("?");
+                            string temp = url.Replace(comicUrl + "/", string.Empty);
+                            workingDate = DateTime.Parse(temp, CultureInfo.InvariantCulture);
+                            comicDate = workingDate.ToString("yyyy/MM/dd");
+                        }
+                        if (string.IsNullOrWhiteSpace(comicDate))
+                        {
+                            await page.CloseAsync();
+                            page = null;
+                            playwright.Dispose();
+                            playwright = null;
+                            return;
+                        }
+
+                        DateTime currentDate = DateTime.Parse(comicDate, CultureInfo.InvariantCulture);
+                        if (currentDate != dtLastDate)
+                        {
+                            // Ignore the last comic previously retrieved
+                            index = content.IndexOf("https://featureassets.gocomics.com/assets/");
                             if (index != -1)
                             {
-                                imageContent = imageContent.Substring(0, index);
-                                var comicData = new ComicData
+                                var imageContent = content.Substring(index);
+                                index = imageContent.IndexOf("\"");
+                                if (index != -1)
                                 {
-                                    First = first,
-                                    Image = imageContent,
-                                    Title = comic + " " + currentDate.ToString("MM/dd/yyyy"),
-                                    Url = pageUrl
-                                };
-                                comicList.Add(comicData);
-                                newestDate = comicDate;
-                                await Console.Out.WriteLineAsync($"{comic} {comicDate}");
-                                first = false;
+                                    imageContent = imageContent.Substring(0, index);
+                                }
+                                index = imageContent.IndexOf("?");
+                                if (index != -1)
+                                {
+                                    imageContent = imageContent.Substring(0, index);
+                                    var comicData = new ComicData
+                                    {
+                                        First = first,
+                                        Image = imageContent,
+                                        Title = comic + " " + currentDate.ToString("MM/dd/yyyy"),
+                                        Url = pageUrl
+                                    };
+                                    comicList.Add(comicData);
+                                    newestDate = comicDate;
+                                    await Console.Out.WriteLineAsync($"{comic} {comicDate}");
+                                    first = false;
+                                }
                             }
                         }
-                    }
 
-                    if (url == comicUrl)
-                        break;
-                    pageUrl = GetNextDate(doc, comic, comicUrl, currentDate.ToString("yyyy/MM/dd"));
-                    if (string.IsNullOrWhiteSpace(pageUrl))
-                        break;
+                        if (url == comicUrl)
+                            break;
+                        pageUrl = GetNextDate(doc, comic, comicUrl, currentDate.ToString("yyyy/MM/dd"));
+                        if (string.IsNullOrWhiteSpace(pageUrl))
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
                 }
             }
-            catch (Exception ex)
+            finally
             {
-                Debug.WriteLine(ex.Message);
+                if (page != null)
+                {
+                    await page.CloseAsync();
+                    page = null;
+                }
+                if (browser != null)
+                {
+                    await browser.CloseAsync();
+                    await browser.DisposeAsync();
+                    browser = null;
+                }
+                if (playwright != null)
+                {
+                    playwright.Dispose();
+                    playwright = null;
+                }
             }
         }
 
@@ -544,25 +576,30 @@ namespace ComicViewer
         {
             string pageUrl = string.Empty;
             var anchors = doc.DocumentNode.SelectNodes("//*[@href]").ToList();
-            var comicHref = "/" + comic;
+            var comicHref = "/" + comic + "/";
             foreach (var anchor in anchors)
             {
                 var hrefs = anchor.Attributes.Where(x => x.Name == "href" && x.Value.StartsWith(comicHref)).ToList();
                 if (hrefs.Count > 0)
                 {
-                    if (hrefs[0].Value == comicHref)
+                    string temp = hrefs[0].Value.Replace(comicHref, string.Empty);
+                    if (string.Compare(temp, currentComicDate) > 0)
+                    {
+                        pageUrl = comicUrl + "/" + temp.Replace("/" + comic + "/", string.Empty);
+                        break;
+                    }
+                }
+            }
+            if (pageUrl == string.Empty)
+            {
+                comicHref = "/" + comic;
+                foreach (var anchor in anchors)
+                {
+                    var hrefs = anchor.Attributes.Where(x => x.Name == "href" && x.Value.StartsWith(comicHref)).ToList();
+                    if (hrefs.Count > 0 && hrefs[0].Value == comicHref)
                     {
                         pageUrl = comicUrl;
                         break;
-                    }
-                    else
-                    {
-                        string temp = hrefs[0].Value.Replace(comicHref + "/", string.Empty);
-                        if (string.Compare(temp, currentComicDate) > 0)
-                        {
-                            pageUrl = comicUrl + "/" + temp.Replace("/" + comic + "/", string.Empty);
-                            break;
-                        }
                     }
                 }
             }

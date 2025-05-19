@@ -165,6 +165,7 @@ namespace ComicViewer
                             {
                                 lastDate = DateTime.Now.Date - new TimeSpan(daysBack, 0, 0, 0);
                             }
+                            await Console.Out.WriteLineAsync($"Checking {comic.Name}...");
                             await ProcessPoliticalCartoons(data, lastDate);
                             string lastViewedDate = string.Empty;
                             if (lastViewedUpdated.ContainsKey(comic.Name))
@@ -457,6 +458,7 @@ namespace ComicViewer
                     {
                         comic = comicUrl.Substring(index + 1);
                     }
+                    await Console.Out.WriteLineAsync($"Checking {comicUrl}...");
 
                     bool first = true;
                     string pageUrl = $"{comicUrl}/{workingDate.ToString("yyyy/MM/dd")}";
@@ -524,6 +526,9 @@ namespace ComicViewer
                                 if (index != -1)
                                 {
                                     imageContent = imageContent.Substring(0, index);
+                                }
+                                if (imageContent.Length > 0)
+                                {
                                     var comicData = new ComicData
                                     {
                                         First = first,

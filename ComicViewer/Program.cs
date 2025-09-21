@@ -462,6 +462,7 @@ namespace ComicViewer
 
                     bool first = true;
                     string pageUrl = $"{comicUrl}/{workingDate.ToString("yyyy/MM/dd")}";
+                    string lastDateFound = string.Empty;
                     if (dtLastDate == DateTime.Today.Date - new TimeSpan(1, 0, 0, 0)) // i.e. yesterday
                     {
                         pageUrl = comicUrl;
@@ -510,6 +511,9 @@ namespace ComicViewer
                         }
 
                         DateTime currentDate = DateTime.Parse(comicDate, CultureInfo.InvariantCulture);
+                        if (comicDate == lastDateFound)
+                            break;
+
                         if (currentDate != dtLastDate)
                         {
                             // Ignore the last comic previously retrieved
@@ -538,6 +542,7 @@ namespace ComicViewer
                                     };
                                     comicList.Add(comicData);
                                     newestDate = comicDate;
+                                    lastDateFound = comicDate;
                                     await Console.Out.WriteLineAsync($"{comic} {comicDate}");
                                     first = false;
                                 }

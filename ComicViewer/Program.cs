@@ -25,6 +25,7 @@ namespace ComicViewer
         private string lastViewedFileLocal;
         private Dictionary<string, string> lastViewed = new Dictionary<string, string>();
         private Dictionary<string, string> lastViewedUpdated = new Dictionary<string, string>();
+        private Dictionary<string, string> comicUrls = new Dictionary<string, string>();
         public List<PoliticalCartoon> politicalCartoons = new List<PoliticalCartoon>();
         private string newestDate;
 
@@ -417,7 +418,11 @@ namespace ComicViewer
                         };
                         first = false;
                         await Console.Out.WriteLineAsync(comic + " " + comicDate).ConfigureAwait(true);
-                        comicKingdomList.Add(comicData);
+                        if (!comicUrls.ContainsKey(comicData.Url))
+                        {
+                            comicUrls[comicData.Url] = comicData.Url;
+                            comicKingdomList.Add(comicData);
+                        }
                         if (string.Compare(comicDate.Replace('-','/'), newestDate) > 0)
                         {
                             newestDate = comicDate.Replace('-', '/');
@@ -513,6 +518,8 @@ namespace ComicViewer
                         DateTime currentDate = DateTime.Parse(comicDate, CultureInfo.InvariantCulture);
                         if (comicDate == lastDateFound)
                             break;
+                        if (currentDate > DateTime.Today.Date)
+                            break;
 
                         if (currentDate != dtLastDate)
                         {
@@ -540,7 +547,11 @@ namespace ComicViewer
                                         Title = comic + " " + currentDate.ToString("MM/dd/yyyy"),
                                         Url = pageUrl
                                     };
-                                    comicList.Add(comicData);
+                                    if (!comicUrls.ContainsKey(comicData.Url))
+                                    {
+                                        comicUrls[comicData.Url] = comicData.Url;
+                                        comicList.Add(comicData);
+                                    }
                                     newestDate = comicDate;
                                     lastDateFound = comicDate;
                                     await Console.Out.WriteLineAsync($"{comic} {comicDate}").ConfigureAwait(true);
@@ -767,7 +778,11 @@ namespace ComicViewer
                                             {
                                                 cartoon.Image = data.Substring(0, pos);
                                                 await Console.Out.WriteLineAsync($"{cartoon.Author} {cartoon.Date}").ConfigureAwait(true);
-                                                politicalCartoons.Add(cartoon);
+                                                if (!comicUrls.ContainsKey(cartoon.Url))
+                                                {
+                                                    comicUrls[cartoon.Url] = cartoon.Url;
+                                                    politicalCartoons.Add(cartoon);
+                                                }
                                             }
                                         }
                                     }

@@ -390,7 +390,7 @@ namespace ComicViewer
                     int index2 = data2.IndexOf('\"');
                     if (index2 != -1)
                     {
-                        string comicDate = data2.Substring(0,index2);
+                        string comicDate = data2.Substring(0, index2);
                         await ProcessProcessComicsKingdomDate(comicUrl, comic, comicDate, lastDate).ConfigureAwait(true);
                     }
                 }
@@ -418,12 +418,12 @@ namespace ComicViewer
                         };
                         first = false;
                         await Console.Out.WriteLineAsync(comic + " " + comicDate).ConfigureAwait(true);
-                        if (!comicUrls.ContainsKey(comicData.Url))
+                        if (!comicUrls.ContainsKey(comicData.Image))
                         {
-                            comicUrls[comicData.Url] = comicData.Url;
+                            comicUrls[comicData.Image] = comicData.Image;
                             comicKingdomList.Add(comicData);
                         }
-                        if (string.Compare(comicDate.Replace('-','/'), newestDate) > 0)
+                        if (string.Compare(comicDate.Replace('-', '/'), newestDate) > 0)
                         {
                             newestDate = comicDate.Replace('-', '/');
                         }
@@ -547,9 +547,9 @@ namespace ComicViewer
                                         Title = comic + " " + currentDate.ToString("MM/dd/yyyy"),
                                         Url = pageUrl
                                     };
-                                    if (!comicUrls.ContainsKey(comicData.Url))
+                                    if (!comicUrls.ContainsKey(comicData.Image))
                                     {
-                                        comicUrls[comicData.Url] = comicData.Url;
+                                        comicUrls[comicData.Image] = comicData.Image;
                                         comicList.Add(comicData);
                                     }
                                     newestDate = comicDate;
@@ -631,7 +631,7 @@ namespace ComicViewer
             {
                 var dayString = innerText.Substring(0, index);
                 var daysOfWeek = Enum.GetValues(typeof(DayOfWeek));
-                foreach(var dayOfWeek in daysOfWeek)
+                foreach (var dayOfWeek in daysOfWeek)
                 {
                     if (dayString.ToLower().Contains(dayOfWeek.ToString().ToLower()))
                     {
@@ -642,7 +642,7 @@ namespace ComicViewer
                         int day;
                         int.TryParse(dayString, out day);
                         int month = 0;
-                        switch(monthString)
+                        switch (monthString)
                         {
                             case "January":
                                 month = 1;
@@ -723,7 +723,7 @@ namespace ComicViewer
             {
                 var l = lines[i];
                 int pos = l.IndexOf("<span class=\"cartoon-published");
-                if (pos != -1) 
+                if (pos != -1)
                 {
                     pos = l.IndexOf(">");
                 }
@@ -778,9 +778,9 @@ namespace ComicViewer
                                             {
                                                 cartoon.Image = data.Substring(0, pos);
                                                 await Console.Out.WriteLineAsync($"{cartoon.Author} {cartoon.Date}").ConfigureAwait(true);
-                                                if (!comicUrls.ContainsKey(cartoon.Url))
+                                                if (!comicUrls.ContainsKey(cartoon.Image))
                                                 {
-                                                    comicUrls[cartoon.Url] = cartoon.Url;
+                                                    comicUrls[cartoon.Image] = cartoon.Image;
                                                     politicalCartoons.Add(cartoon);
                                                 }
                                             }
@@ -820,10 +820,10 @@ namespace ComicViewer
                 pos = data.IndexOf("href=\"", pos + 1);
                 if (pos == -1)
                     return false;
-                int pos2 = data.IndexOf("\"",pos + 6);
+                int pos2 = data.IndexOf("\"", pos + 6);
                 newestDate = data.Substring(pos + 7, pos2 - pos - 8);
                 string title = GetElement(data, "<title>", "</title>", true);
-                string image = GetElement(data, "<meta property=\"og:image\" content=\"", "\">", true).Replace("_2x","");
+                string image = GetElement(data, "<meta property=\"og:image\" content=\"", "\">", true).Replace("_2x", "");
                 if (!string.IsNullOrWhiteSpace(image))
                 {
                     ComicData comicData = new ComicData
@@ -851,7 +851,7 @@ namespace ComicViewer
                 comicsFound++;
                 string title = GetElement(data, "<title>", "</title>", true);
                 string image = GetElement(data, "<meta property=\"og:image\" content=\"", "\">", true).Replace("_2x", "");
-                if (string.IsNullOrWhiteSpace(image)) 
+                if (string.IsNullOrWhiteSpace(image))
                 {
                     int index = data.IndexOf("<img src=\"//imgs.xkcd.com/comics/");
                     if (index > -1)
